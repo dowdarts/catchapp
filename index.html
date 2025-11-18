@@ -1,13 +1,1091 @@
-<!doctype html>
+</style>
+<!-- Responsive mobile-friendly tweaks -->
+<style>
+@media (max-width: 640px) {
+    #app {
+        max-width: 100vw !important;
+        border-radius: 0 !important;
+        padding: 0.5rem !important;
+    }
+    .darts-key-btn, .tab-button, #undoButton, #resetGameButton {
+        font-size: 1.1rem !important;
+        padding: 0.9rem 0.5rem !important;
+    }
+    input, select, textarea {
+        font-size: 1.1rem !important;
+    }
+}
+</style>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>my-project</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch 41 (2-Dart out Practice)</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        /* Custom class for the quick input buttons */
+        .darts-key-btn {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 1rem; /* text-base */
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(1);
+            border: 2px solid transparent;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        .darts-key-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .darts-key-btn:hover::before {
+            left: 100%;
+        }
+        .darts-key-btn:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.3), 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+        }
+        .darts-key-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.2);
+        }
+        .tab-button {
+            flex-grow: 1;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            border-bottom-width: 3px;
+            border-bottom-style: solid;
+            transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.05);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- Tooltip Styles for Keyboard Hint --- */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            color: #fff;
+            text-align: center;
+            border-radius: 0.75rem;
+            padding: 12px 16px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%; 
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        /* Show tooltip on hover/focus */
+        .tooltip-container:hover .tooltip-text,
+        .tooltip-container:focus-within .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* Arrow for the tooltip */
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -8px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: #1f2937 transparent transparent transparent;
+        }
+    </style>
+</head>
+<body class="h-screen p-1 md:p-2 overflow-hidden">
+    <div id="app" class="h-full w-full max-w-[420px] mx-auto min-h-screen flex flex-col flex-1 bg-white/95 backdrop-blur-xl shadow-2xl border border-white/20 rounded-2xl">
+        
+        <header class="p-2 sm:p-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 text-white shadow-xl relative overflow-hidden flex-shrink-0 catch40-header-logo">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+            <div class="relative z-10 h-full">
+                <div class="flex justify-between items-start h-full">
+                    <div class="flex-1"></div>
+                    <div class="text-center flex-1 h-full flex items-center justify-center">
+                        <img src="catch40applogo.png" alt="Catch40 App Logo" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="flex-1 flex justify-end"></div>
+                </div>
+            </div>
+            <div class="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <div class="absolute bottom-0 left-0 w-12 h-12 bg-white/5 rounded-full translate-y-6 -translate-x-6"></div>
+        </header>
+        <style>
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #app {
+            min-height: 100vh;
+            min-width: 0;
+            width: 100vw;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+            border-radius: 1rem;
+        }
+        @media (max-width: 640px) {
+            #app {
+                width: 100vw;
+                max-width: 100vw;
+                border-radius: 0 !important;
+                padding: 0 !important;
+            }
+        }
+        .catch40-header-logo {
+            min-height: 80px;
+            height: 80px;
+        }
+        @media (min-width: 640px) {
+            .catch40-header-logo {
+                min-height: 120px;
+                height: 120px;
+            }
+        }
+        </style>
+
+        <div id="tabNav" class="flex border-b border-gray-200/50 bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
+            <button id="gameTabBtn" class="tab-button border-indigo-600 bg-indigo-50/50 text-indigo-700 py-2 px-3" 
+                    onclick="switchTab('game')">
+                🎯 Game
+            </button>
+            <button id="rulesTabBtn" class="tab-button border-transparent text-gray-600 hover:bg-gray-50/50 py-2 px-3" 
+                    onclick="switchTab('rules')">
+                📋 How to Play
+            </button>
+        </div>
+
+        <div class="p-2 sm:p-3 bg-gradient-to-br from-gray-50 to-white flex-1 overflow-hidden">
+            
+            <!-- GAME TAB CONTENT -->
+            <div id="gameTabContent" class="h-full flex flex-col">
+                
+                <!-- Game Section -->
+                <div class="text-center mb-3 border-2 border-gray-200/50 rounded-xl p-3 bg-gradient-to-br from-white to-gray-50/50 shadow-xl backdrop-blur-sm flex-shrink-0">
+                    <p class="text-sm font-bold text-gray-700 mb-2 flex items-center justify-center gap-2">
+                        🎯 <span>Current Out Target</span>
+                    </p>
+                    
+                    <!-- Out Display and Info Icon Container -->
+                    <div class="flex justify-center items-center gap-2 relative mb-3">
+                         <div id="currentOutDisplay" class="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 leading-none drop-shadow-sm">61</div>
+                         
+                         <!-- Keyboard Input Info Icon with Tooltip -->
+                         <div id="keyboardInfoIcon" class="tooltip-container absolute right-1/4 md:right-[30%] top-1/2 transform -translate-y-1/2">
+                            <div class="w-5 h-5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white cursor-help shadow-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <span class="tooltip-text">Click on app to use keyboard (0, 2-6) for input.</span>
+                         </div>
+                    </div>
+                    
+                    <!-- Recommended Takeout Display -->
+                    <div id="takeoutDisplay" class="mb-3 p-2 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-200/50 shadow-md">
+                        <div class="text-center">
+                            <p class="text-xs font-bold text-emerald-700 mb-1 flex items-center justify-center gap-1">
+                                🎯 <span>Recommended Takeout</span>
+                            </p>
+                            <div id="takeoutText" class="text-sm font-bold text-emerald-800">
+                                T10-D16 (30 - 32)
+                            </div>
+                            <div id="takeoutDescription" class="text-xs text-emerald-600 mt-1">
+                                Treble 10, Double 16
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="errorMessage" class="text-red-500 font-bold h-4 text-sm"></div>
+                    
+                    <!-- Undo and Reset Buttons Container -->
+                    <div class="flex justify-center gap-2 mt-2 mb-3">
+                        <button id="undoButton" disabled
+                                class="px-2 py-1 text-xs bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold rounded-lg shadow-lg hover:from-indigo-600 hover:to-indigo-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] border border-indigo-400/30">
+                            ↶ Undo
+                        </button>
+                        <!-- RESET BUTTON - Now triggers confirmation modal -->
+                        <button id="resetGameButton"
+                                class="px-2 py-1 text-xs bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-lg shadow-lg hover:from-red-600 hover:to-red-700 transition duration-200 transform hover:scale-[1.02] active:scale-[0.98] border border-red-400/30">
+                            🔄 Reset
+                        </button>
+                    </div>
+                    
+                    <!-- Number Pad (Quick Input - Primary Action) -->
+                    <div class="flex flex-col items-center flex-1">
+                        <div class="w-full max-w-sm"> 
+                            <!-- Three equal columns: 2, 3, and 456 combined -->
+                            <div id="topButtons" class="grid grid-cols-3 gap-2 mb-2"> 
+                                <!-- 2 Darts Button -->
+                                <button data-darts="2" class="darts-key-btn bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 border-emerald-400/30 py-3">
+                                    <span class="text-2xl font-black">2</span>
+                                    <div class="text-xs opacity-90 mt-1">EXCELLENT</div>
+                                </button>
+                                
+                                <!-- 3 Darts Button -->
+                                <button data-darts="3" class="darts-key-btn bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 border-blue-400/30 py-3">
+                                    <span class="text-2xl font-black">3</span>
+                                    <div class="text-xs opacity-90 mt-1">GREAT</div>
+                                </button>
+                                
+                                <!-- 4,5,6 Button (no dropdown) -->
+                                <button data-darts="4" id="combinedButton456" class="darts-key-btn bg-gradient-to-r from-amber-400 to-amber-500 text-gray-900 hover:from-amber-500 hover:to-amber-600 border-amber-300/30 w-full relative py-3">
+                                    <span class="text-xl font-black">4,5,6</span>
+                                    <div class="text-xs opacity-90 mt-1">GOOD</div>
+                                </button>
+                            </div>
+
+                            <!-- Miss Button: 0 Points (Red) - Full Width -->
+                            <button data-darts="0" id="missButton" 
+                                    class="darts-key-btn bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 w-full border-red-400/30 py-3">
+                                <span class="text-xl font-black">MISS (0)</span>
+                                <div class="text-xs opacity-90 mt-1">7+ DARTS</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Score & Progress -->
+                <div class="grid grid-cols-2 gap-2 text-center flex-shrink-0">
+                    <div class="p-2 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg shadow-lg border border-blue-200/50 backdrop-blur-sm">
+                        <p class="text-xs text-blue-700 font-bold flex items-center justify-center gap-1">
+                            💯 <span>Score</span>
+                        </p>
+                        <div id="totalScoreDisplay" class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700">0</div>
+                        <div class="text-xs text-blue-600 font-medium">out of 120</div>
+                    </div>
+                    <div class="p-2 bg-gradient-to-br from-emerald-50 to-green-100 rounded-lg shadow-lg border border-emerald-200/50 backdrop-blur-sm">
+                        <p class="text-xs text-emerald-700 font-bold flex items-center justify-center gap-1">
+                            🏆 <span>Progress</span>
+                        </p>
+                        <div id="outsCompletedDisplay" class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-700">0 / 40</div>
+                        <div class="text-xs text-emerald-600 font-medium">outs done</div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- END GAME TAB CONTENT -->
+
+            <!-- RULES TAB CONTENT -->
+            <div id="rulesTabContent" class="hidden h-full overflow-y-auto">
+
+                 <!-- Rules and Point Explanation Section -->
+                <div class="mb-4">
+                    <h2 class="text-xl font-black text-gray-800 mb-3 border-b-2 border-gradient-to-r from-indigo-400 to-purple-400 pb-2 flex items-center gap-2">
+                        📚 <span>How to Play Catch 41</span>
+                    </h2>
+                    
+                    <div class="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg border border-blue-200/50 mb-4">
+                        <p class="text-gray-700 text-sm leading-relaxed">
+                            The goal of Catch 41 practice is to finish every out from <strong class="text-indigo-600">61 to 100</strong> (40 total outs) in <strong class="text-indigo-600">6 darts or less</strong>. You earn points based on how quickly you finish each out.
+                        </p>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        🎯 <span>Point System:</span>
+                    </h3>
+                    
+                    <div class="space-y-2">
+                        <div class="p-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg shadow-md border-l-4 border-emerald-400">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-lg">🏆</span>
+                                <span class="font-black text-emerald-700 text-sm">3 Points: Finished in 2 Darts</span>
+                            </div>
+                            <p class="text-emerald-600 ml-6 text-xs">Quickest possible finish. Also awarded for 99 out in 3 darts.</p>
+                        </div>
+                        
+                        <div class="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md border-l-4 border-blue-400">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-lg">🥈</span>
+                                <span class="font-black text-blue-700 text-sm">2 Points: Finished in 3 Darts</span>
+                            </div>
+                            <p class="text-blue-600 ml-6 text-xs">Excellent finish.</p>
+                        </div>
+                        
+                        <div class="p-3 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg shadow-md border-l-4 border-amber-400">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-lg">🥉</span>
+                                <span class="font-black text-amber-700 text-sm">1 Point: Finished in 4, 5, or 6 Darts</span>
+                            </div>
+                            <p class="text-amber-600 ml-6 text-xs">Success! Completed within the 6-dart limit.</p>
+                        </div>
+                        
+                        <div class="p-3 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg shadow-md border-l-4 border-red-400">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-lg">❌</span>
+                                <span class="font-black text-red-700 text-sm">0 Points: Miss (7+ Darts)</span>
+                            </div>
+                            <p class="text-red-600 ml-6 text-xs">If you take 7 or more darts, you record 0 points and move to the next out.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-gradient-to-r from-gray-100 to-gray-50 rounded-lg border border-gray-200">
+                        <p class="text-center text-gray-600 font-semibold text-sm">
+                            🎯 <strong>Maximum Score:</strong> 40 outs × 3 points/out = <span class="text-indigo-600 font-black">120 points</span>
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+            <!-- END RULES TAB CONTENT -->
+            
+            <!-- Completion Modal (Hidden by default) -->
+            <div id="completionModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-start justify-center p-4 pt-16">
+                <div class="bg-white/95 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl max-w-md text-center border border-white/20">
+                    <div class="w-20 h-20 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full flex items-center justify-center text-white mx-auto mb-6 shadow-lg">
+                        <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl sm:text-3xl font-black text-gray-900 mb-4">🎉 Practice Complete!</h3>
+                    <p class="text-gray-600 mb-8 text-lg">You've finished all outs from 61 to 100.</p>
+                    <div class="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl mb-8 border border-blue-200/50">
+                        <p class="text-lg text-blue-700 font-bold mb-2">Final Score</p>
+                        <p class="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700"><span id="finalScore"></span> / 120</p>
+                    </div>
+                    <button id="completionModalResetButton" class="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:from-indigo-600 hover:to-indigo-700 transition duration-200 transform hover:scale-[1.02] border border-indigo-400/30">
+                        🔄 Start New Session
+                    </button>
+                </div>
+            </div>
+
+            <!-- Confirmation Modal for Reset Game (NEW) -->
+            <div id="confirmResetModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-start justify-center p-4 pt-16">
+                <div class="bg-white/95 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl max-w-md text-center border border-white/20">
+                    <div class="w-20 h-20 bg-gradient-to-r from-red-400 to-red-500 rounded-full flex items-center justify-center text-white mx-auto mb-6 shadow-lg">
+                        <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl sm:text-3xl font-black text-gray-900 mb-4">⚠️ Confirm Reset</h3>
+                    <p class="text-gray-600 mb-8 text-lg leading-relaxed">
+                        Are you sure you want to restart the game? All current progress will be lost.
+                    </p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button id="confirmResetCancelButton" class="px-6 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold rounded-xl hover:from-gray-500 hover:to-gray-600 transition duration-200 shadow-lg border border-gray-300/30">
+                            Cancel
+                        </button>
+                        <button id="confirmResetConfirmButton" class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl hover:from-red-600 hover:to-red-700 transition duration-200 shadow-lg border border-red-400/30">
+                            🔄 Confirm Restart
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Leaderboard Section (inside app, after score/progress) -->
+        <div id="leaderboardSection" class="mt-6 mb-4 p-4 bg-gradient-to-br from-yellow-50 to-amber-100 rounded-2xl shadow-lg border border-amber-200/50">
+            <h2 class="text-lg font-black text-amber-700 mb-2 flex items-center gap-2">
+                🏅 <span>Leaderboard</span>
+            </h2>
+            <div id="leaderboardTableWrapper">
+                <table class="w-full text-sm text-left">
+                    <thead>
+                        <tr class="text-amber-800">
+                            <th class="py-1">Name</th>
+                            <th class="py-1">Score</th>
+                            <th class="py-1">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardTable"></tbody>
+                </table>
+            </div>
+            <div id="lbError" class="text-red-500 font-bold mt-2 text-xs"></div>
+        </div>
+    </div> <!-- END of div#app -->
+
+    <!-- Leaderboard Section moved to bottom -->
+
+
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script type="module">
+        // --- Supabase Leaderboard Integration with Google Auth ---
+        const SUPABASE_URL = 'https://oyzojtvytdypzlvkbbfu.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95em9qdHZ5dGR5cHpsdmtiYmZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MjgyODMsImV4cCI6MjA3OTAwNDI4M30.ngKJnpY7CWBzC5mpRWssNJ6Oi4hoUhq9wnHVkfhWlKI';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function fetchLeaderboard() {
+            // Only show each user's highest score
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .select('username,score,created_at')
+                .order('score', { ascending: false });
+            if (error) return [];
+            // Filter to only highest score per username
+            const seen = new Set();
+            const unique = [];
+            for (const row of data) {
+                if (!seen.has(row.username)) {
+                    unique.push(row);
+                    seen.add(row.username);
+                }
+            }
+            return unique.slice(0, 10);
+        }
+        async function submitScore(name, score) {
+            // Check for previous high score
+            const { data: previous, error: prevError } = await supabase
+                .from('leaderboard')
+                .select('id,score')
+                .eq('username', name)
+                .order('score', { ascending: false });
+            const prevHigh = previous && previous.length > 0 ? previous[0] : null;
+            if (prevHigh && Number(score) <= Number(prevHigh.score)) {
+                // Do not save if not a new high score
+                return { skipped: true };
+            }
+            // If new high, delete all previous scores for this user
+            if (prevHigh) {
+                const idsToDelete = previous.map(row => row.id);
+                await supabase
+                    .from('leaderboard')
+                    .delete()
+                    .in('id', idsToDelete);
+            }
+            // Insert new high score
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .insert([{ username: name, score: Number(score) }]);
+            if (error) throw new Error('Failed to submit score');
+            return data;
+        }
+
+        // --- High Score Modal Logic ---
+        function showHighScoreModal(name, rank) {
+            let modal = document.getElementById('highScoreModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'highScoreModal';
+                modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+                modal.innerHTML = `
+                    <div class="bg-white/95 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl max-w-md text-center border border-white/20">
+                        <h3 class="text-3xl font-black text-amber-600 mb-4">🏆 NEW HIGH SCORE!</h3>
+                        <p class="text-lg text-gray-800 mb-2">Congratulations <span class="font-bold">${name}</span>!</p>
+                        <p class="text-base text-gray-700 mb-4">You are now ranked <span class="font-bold">#${rank}</span> on the leaderboard.</p>
+                        <button id="closeHighScoreModalBtn" class="w-full px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold rounded-xl shadow-lg hover:from-amber-600 hover:to-amber-700 transition duration-200">Close</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                modal.querySelector('span.font-bold').textContent = name;
+                modal.querySelector('span.font-bold:last-child').textContent = `#${rank}`;
+                modal.style.display = 'flex';
+            }
+            document.getElementById('closeHighScoreModalBtn').onclick = function() {
+                modal.style.display = 'none';
+            };
+        }
+
+        // --- Name/Guest Modal Logic (Pre-Game) ---
+        let playerName = null;
+        let isGuest = false;
+
+        function showPreGameModal() {
+            let modal = document.getElementById('preGameModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'preGameModal';
+                modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+                modal.innerHTML = `
+                    <div class="bg-white/95 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl max-w-md text-center border border-white/20">
+                        <img src="catch40applogo.png" alt="Catch40 App Logo" class="mx-auto mb-4 max-h-40 w-auto" style="object-fit:contain;" />
+                        <img src="CGC official logo-1.png" alt="CGC Logo" class="mx-auto mb-4 max-h-16 w-auto" style="object-fit:contain;" />
+                        <h3 class="text-2xl sm:text-3xl font-black text-gray-900 mb-2">Welcome!</h3>
+                        <p class="text-gray-700 text-base mb-4">Enter your name to save your score to the leaderboard, or play as guest (score won't be saved).</p>
+                        <input id="prePlayerNameInput" type="text" maxlength="24" placeholder="Your name" class="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-base" />
+                        <div class="flex flex-col gap-3">
+                            <button id="preSaveNameBtn" class="w-full px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold rounded-xl shadow-lg hover:from-amber-600 hover:to-amber-700 transition duration-200">Start & Save to Leaderboard</button>
+                            <button id="preGuestBtn" class="w-full px-6 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold rounded-xl shadow-lg hover:from-gray-500 hover:to-gray-600 transition duration-200">Play as Guest</button>
+                        </div>
+                        <div id="preGameModalError" class="text-red-500 font-bold mt-2 text-xs"></div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                modal.style.display = 'flex';
+            }
+            // Autofocus input
+            setTimeout(() => {
+                document.getElementById('prePlayerNameInput').focus();
+            }, 100);
+
+            // Save name button logic
+            document.getElementById('preSaveNameBtn').onclick = function() {
+                const name = document.getElementById('prePlayerNameInput').value.trim();
+                if (!name) {
+                    document.getElementById('preGameModalError').textContent = 'Please enter your name.';
+                    return;
+                }
+                playerName = name;
+                isGuest = false;
+                hidePreGameModal();
+                unlockGame();
+            };
+            // Guest button logic
+            document.getElementById('preGuestBtn').onclick = function() {
+                playerName = null;
+                isGuest = true;
+                hidePreGameModal();
+                unlockGame();
+            };
+        }
+
+        function hidePreGameModal() {
+            const modal = document.getElementById('preGameModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function lockGameUntilAuth() {
+            document.querySelectorAll('.darts-key-btn, #undoButton, #resetGameButton').forEach(btn => btn.disabled = true);
+        }
+        function unlockGame() {
+            document.querySelectorAll('.darts-key-btn, #undoButton, #resetGameButton').forEach(btn => btn.disabled = false);
+        }
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString();
+        }
+        async function renderLeaderboard() {
+            const table = document.getElementById('leaderboardTable');
+            table.innerHTML = '<tr><td colspan="3" class="text-center text-gray-400">Loading...</td></tr>';
+            try {
+                const data = await fetchLeaderboard();
+                if (!data.length) {
+                    table.innerHTML = '<tr><td colspan="3" class="text-center text-gray-400">No scores yet.</td></tr>';
+                    return;
+                }
+                table.innerHTML = data.map(row => `<tr><td class="py-1">${row.username}</td><td class="py-1">${row.score}</td><td class="py-1">${formatDate(row.created_at)}</td></tr>`).join('');
+            } catch {
+                table.innerHTML = '<tr><td colspan="3" class="text-center text-red-400">Error loading leaderboard.</td></tr>';
+            }
+        }
+
+        // --- App Initialization (No Google Auth) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderLeaderboard();
+            lockGameUntilAuth();
+            showPreGameModal();
+
+            // On game complete, auto-submit score if not guest
+            const observer = new MutationObserver(() => {
+                const completionModal = document.getElementById('completionModal');
+                if (completionModal.classList.contains('flex')) {
+                    const finalScore = document.getElementById('finalScore').textContent;
+                    if (!isGuest && playerName && finalScore) {
+                        (async () => {
+                            // Only save if new high score
+                            const result = await submitScore(playerName, finalScore);
+                            await renderLeaderboard();
+                            if (result && !result.skipped) {
+                                // Get leaderboard to find rank
+                                const { data: lb } = await supabase
+                                    .from('leaderboard')
+                                    .select('username,score')
+                                    .order('score', { ascending: false });
+                                let rank = 0;
+                                if (lb && lb.length > 0) {
+                                    // Only count unique usernames
+                                    const seen = new Set();
+                                    let uniqueRank = 0;
+                                    for (let i = 0; i < lb.length; i++) {
+                                        if (!seen.has(lb[i].username)) {
+                                            uniqueRank++;
+                                            seen.add(lb[i].username);
+                                        }
+                                        if (lb[i].username === playerName && lb[i].score == finalScore) {
+                                            rank = uniqueRank;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (rank > 0) {
+                                    showHighScoreModal(playerName, rank);
+                                }
+                            }
+                        })();
+                    }
+                }
+            });
+            observer.observe(document.getElementById('completionModal'), { attributes: true, attributeFilter: ['class'] });
+        });
+
+        // Game Constants
+        const MIN_OUT = 61;
+        const MAX_OUT = 100;
+        const MAX_SCORE = 120;
+        const OUTS_COUNT = MAX_OUT - MIN_OUT + 1; // 40 outs
+
+        // Recommended Takeouts Data
+        const TAKEOUTS = {
+            61: { text: "T13-D12 (39 - 24)", description: "Treble 13, Double 12" },
+            62: { text: "T10-D16 (30 - 32)", description: "Treble 10, Double 16" },
+            63: { text: "T17-D6 (51 - 12)", description: "Treble 17, Double 6" },
+            64: { text: "T16-D8 (48 - 16)", description: "Treble 16, Double 8" },
+            65: { text: "SB-D20 (25 - 40)", description: "Single Bull, Double 20" },
+            66: { text: "T10-D18 (30 - 36)", description: "Treble 10, Double 18" },
+            67: { text: "T9-D20 (27 - 40)", description: "Treble 9, Double 20" },
+            68: { text: "T12-D16 (36 - 32)", description: "Treble 12, Double 16" },
+            69: { text: "T19-D6 (57 - 12)", description: "Treble 19, Double 6" },
+            70: { text: "T18-D8 (54 - 16)", description: "Treble 18, Double 8" },
+            71: { text: "T13-D16 (39 - 32)", description: "Treble 13, Double 16" },
+            72: { text: "T16-D12 (48 - 24)", description: "Treble 16, Double 12" },
+            73: { text: "T19-D8 (57 - 16)", description: "Treble 19, Double 8" },
+            74: { text: "T14-D16 (42 - 32)", description: "Treble 14, Double 16" },
+            75: { text: "T17-D12 (51 - 24)", description: "Treble 17, Double 12" },
+            76: { text: "T16-D14 (48 - 28)", description: "Treble 16, Double 14" },
+            77: { text: "T19-D10 (57 - 20)", description: "Treble 19, Double 10" },
+            78: { text: "T18-D12 (54 - 24)", description: "Treble 18, Double 12" },
+            79: { text: "T19-D11 (57 - 22)", description: "Treble 19, Double 11" },
+            80: { text: "T20-D10 (60 - 20)", description: "Treble 20, Double 10" },
+            81: { text: "T19-D12 (57 - 24)", description: "Treble 19, Double 12" },
+            82: { text: "T14-D20 (42 - 40)", description: "Treble 14, Double 20" },
+            83: { text: "T17-D16 (51 - 32)", description: "Treble 17, Double 16" },
+            84: { text: "T20-D12 (60 - 24)", description: "Treble 20, Double 12" },
+            85: { text: "T15-D20 (45 - 40)", description: "Treble 15, Double 20" },
+            86: { text: "T18-D16 (54 - 32)", description: "Treble 18, Double 16" },
+            87: { text: "T17-D18 (51 - 36)", description: "Treble 17, Double 18" },
+            88: { text: "T20-D14 (60 - 28)", description: "Treble 20, Double 14" },
+            89: { text: "T19-D16 (57 - 32)", description: "Treble 19, Double 16" },
+            90: { text: "T20-D15 (60 - 30)", description: "Treble 20, Double 15" },
+            91: { text: "T17-D20 (51 - 40)", description: "Treble 17, Double 20" },
+            92: { text: "T20-D16 (60 - 32)", description: "Treble 20, Double 16" },
+            93: { text: "T19-D18 (57 - 36)", description: "Treble 19, Double 18" },
+            94: { text: "T18-D20 (54 - 40)", description: "Treble 18, Double 20" },
+            95: { text: "T19-D19 (57 - 38)", description: "Treble 19, Double 19" },
+            96: { text: "T20-D18 (60 - 36)", description: "Treble 20, Double 18" },
+            97: { text: "T19-D20 (57 - 40)", description: "Treble 19, Double 20" },
+            98: { text: "T20-D19 (60 - 38)", description: "Treble 20, Double 19" },
+            99: { text: "T19-S10-D16 (57-10-32)", description: "Treble 19, Single 10, Double 16" },
+            100: { text: "T20-D20 (60 - 40)", description: "Treble 20, Double 20" }
+        };
+
+        // Game State (Local representation of Firestore document)
+        let gameState = {
+            totalScore: 0,
+            currentOut: MIN_OUT,
+            outsCompleted: 0,
+            totalDartsThrown: 0,
+            outsData: {}, // Map of {61: {darts: 3, score: 2}, 62: ...}
+            lastUpdated: new Date().toISOString(),
+            previousState: null, // Stores state before last recordFinish for undo
+            activeTab: 'game'
+        };
+
+        // --- Utility Functions ---
+
+        /** Calculates points based on darts used and current out. */
+        function calculatePoints(darts, outScore) {
+            if (darts < 2 || darts > 6) return 0; 
+            
+            if (darts === 2) return 3;
+            if (darts === 3) {
+                // Exception: 99 out in 3 darts scores 3 points
+                if (outScore === 99) return 3; 
+                return 2;
+            }
+            if (darts >= 4 && darts <= 6) return 1;
+            
+            return 0; 
+        }
+
+        // --- Modal Control Functions ---
+
+        /** Shows the confirmation modal for resetting the game. */
+        function showConfirmResetModal() {
+            document.getElementById('confirmResetModal').classList.add('flex');
+            document.getElementById('confirmResetModal').classList.remove('hidden');
+        }
+
+        /** Hides the confirmation modal for resetting the game. */
+        function hideConfirmResetModal() {
+            document.getElementById('confirmResetModal').classList.remove('flex');
+            document.getElementById('confirmResetModal').classList.add('hidden');
+        }
+
+
+        // --- UI Update Logic ---
+        
+        /** Updates the takeout display for the current out. */
+        function updateTakeoutDisplay() {
+            const takeout = TAKEOUTS[gameState.currentOut];
+            const takeoutTextEl = document.getElementById('takeoutText');
+            const takeoutDescEl = document.getElementById('takeoutDescription');
+            const takeoutDisplayEl = document.getElementById('takeoutDisplay');
+            
+            if (takeout && gameState.currentOut <= MAX_OUT) {
+                takeoutTextEl.textContent = takeout.text;
+                takeoutDescEl.textContent = takeout.description;
+                takeoutDisplayEl.classList.remove('hidden');
+                takeoutDisplayEl.style.display = 'block';
+            } else {
+                takeoutDisplayEl.classList.add('hidden');
+                takeoutDisplayEl.style.display = 'none';
+            }
+        }
+        
+        /** Updates the core game display elements. */
+        function updateMainDisplay() {
+            // Update Core Game Numbers
+            document.getElementById('currentOutDisplay').textContent = gameState.currentOut;
+            document.getElementById('totalScoreDisplay').textContent = gameState.totalScore;
+            document.getElementById('outsCompletedDisplay').textContent = `${gameState.outsCompleted} / ${OUTS_COUNT}`;
+            
+            // Update Takeout Display
+            updateTakeoutDisplay();
+            
+            // Update Undo Button Status
+            const undoButton = document.getElementById('undoButton');
+            // Allow undo only if previous state exists and game is not fully reset/finished
+            const canUndo = gameState.previousState !== null && gameState.currentOut <= MAX_OUT + 1; 
+            undoButton.disabled = !canUndo;
+
+            // Update Completion Modal Visibility
+            const completionModal = document.getElementById('completionModal');
+            const dartsButtons = document.querySelectorAll('.darts-key-btn');
+
+            if (gameState.currentOut > MAX_OUT) {
+                // Game Finished state
+                completionModal.classList.add('flex');
+                completionModal.classList.remove('hidden');
+                document.getElementById('finalScore').textContent = gameState.totalScore;
+                
+                // Disable all game-interaction elements
+                dartsButtons.forEach(btn => btn.disabled = true);
+                document.getElementById('undoButton').disabled = true;
+                document.getElementById('resetGameButton').disabled = true;
+                
+                // Hide takeout display when game is finished
+                document.getElementById('takeoutDisplay').style.display = 'none';
+
+            } else {
+                // Game Active state
+                completionModal.classList.remove('flex');
+                completionModal.classList.add('hidden');
+                
+                // Ensure buttons are enabled if game is active
+                dartsButtons.forEach(btn => btn.disabled = false);
+                document.getElementById('resetGameButton').disabled = false;
+            }
+        }
+        
+        /** Renders the current game state to the UI. */
+        function renderUI() {
+            updateMainDisplay();
+
+            // Tab visibility logic
+            const gameContent = document.getElementById('gameTabContent');
+            const rulesContent = document.getElementById('rulesTabContent');
+            const gameTabBtn = document.getElementById('gameTabBtn');
+            const rulesTabBtn = document.getElementById('rulesTabBtn');
+
+            if (gameState.activeTab === 'game') {
+                gameContent.classList.remove('hidden');
+                rulesContent.classList.add('hidden');
+                
+                gameTabBtn.classList.add('bg-indigo-50/50', 'border-indigo-600', 'text-indigo-700');
+                gameTabBtn.classList.remove('text-gray-600', 'hover:bg-gray-50/50', 'border-transparent');
+                
+                rulesTabBtn.classList.remove('bg-indigo-50/50', 'border-indigo-600', 'text-indigo-700');
+                rulesTabBtn.classList.add('text-gray-600', 'hover:bg-gray-50/50', 'border-transparent');
+            } else { // activeTab === 'rules'
+                gameContent.classList.add('hidden');
+                rulesContent.classList.remove('hidden');
+
+                rulesTabBtn.classList.add('bg-indigo-50/50', 'border-indigo-600', 'text-indigo-700');
+                rulesTabBtn.classList.remove('text-gray-600', 'hover:bg-gray-50/50', 'border-transparent');
+
+                gameTabBtn.classList.remove('bg-indigo-50/50', 'border-indigo-600', 'text-indigo-700');
+                gameTabBtn.classList.add('text-gray-600', 'hover:bg-gray-50/50', 'border-transparent');
+            }
+        }
+        
+        window.switchTab = function(newTab) {
+            if (gameState.activeTab !== newTab) {
+                gameState.activeTab = newTab;
+                renderUI(); 
+                saveGameState(); // Save tab state
+            }
+        }
+
+        // --- Firestore Operations ---
+
+        /** Gets the document reference for the current user's session. */
+        function getSessionDocRef() {
+            const sessionPath = `/artifacts/${appId}/users/${userId}/catch41_sessions`;
+            return doc(db, sessionPath, 'session');
+        }
+
+        /** Loads the game state from Firestore and sets up the listener. */
+        function loadGameState() {
+            if (!isAuthReady || !db || !userId) return;
+
+            const docRef = getSessionDocRef();
+            
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const loadedState = docSnap.data();
+                    gameState = {
+                        ...loadedState,
+                        currentOut: parseInt(loadedState.currentOut),
+                        previousState: loadedState.previousState || null,
+                        activeTab: loadedState.activeTab || 'game'
+                    };
+                } else {
+                    if (gameState.currentOut === MIN_OUT) {
+                        saveGameState();
+                    }
+                }
+                renderUI(); 
+            }, (error) => {
+                console.error("Error setting up onSnapshot listener:", error);
+            });
+        }
+        
+        /** Saves the current game state to Firestore. */
+        async function saveGameState() {
+            if (!isAuthReady || !db || !userId) {
+                return;
+            }
+            
+            gameState.lastUpdated = new Date().toISOString();
+            const docRef = getSessionDocRef();
+            
+            const stateToSave = {
+                totalScore: gameState.totalScore,
+                currentOut: gameState.currentOut,
+                outsCompleted: gameState.outsCompleted,
+                totalDartsThrown: gameState.totalDartsThrown,
+                outsData: gameState.outsData,
+                previousState: gameState.previousState,
+                lastUpdated: gameState.lastUpdated,
+                activeTab: gameState.activeTab
+            };
+
+            try {
+                await setDoc(docRef, stateToSave, { merge: true });
+            } catch (e) {
+                console.error("Error writing document: ", e);
+            }
+        }
+        
+        // --- Game Logic ---
+
+        /** Handles the user recording a finish. */
+        async function recordFinish(dartsInput) {
+            const errorElement = document.getElementById('errorMessage');
+            
+            const dartsUsed = dartsInput === 0 ? 7 : dartsInput;
+
+            if (gameState.currentOut > MAX_OUT) {
+                errorElement.textContent = "Game finished! Please reset to start a new session.";
+                return;
+            }
+
+            errorElement.textContent = "";
+            
+            // 0. Save current state for potential Undo
+            const stateToSave = JSON.parse(JSON.stringify(gameState));
+            delete stateToSave.previousState;
+            gameState.previousState = stateToSave;
+            
+            const currentOut = gameState.currentOut;
+            const points = calculatePoints(dartsUsed, currentOut); 
+            
+            // 1. Update Game State
+            if (!gameState.outsData[currentOut]) {
+                gameState.outsCompleted += 1;
+            } else {
+                // If re-recording the same out, subtract old score/darts first
+                gameState.totalScore -= (gameState.outsData[currentOut].score || 0);
+                gameState.totalDartsThrown -= (gameState.outsData[currentOut].darts || 0);
+            }
+
+            gameState.totalScore += points;
+            gameState.totalDartsThrown += dartsUsed; 
+            gameState.outsData[currentOut] = { darts: dartsUsed, score: points };
+            
+            // 2. Move to next out
+            if (gameState.currentOut <= MAX_OUT) {
+                gameState.currentOut += 1;
+            }
+
+            // Cap score at MAX_SCORE
+            if (gameState.totalScore > MAX_SCORE) {
+                gameState.totalScore = MAX_SCORE;
+            }
+
+            updateMainDisplay(); // Instant update
+            await saveGameState(); // Save asynchronously
+        }
+        
+        /** Reverts the game state to the point before the last successful recordFinish. */
+        async function undoLastScore() {
+            if (!gameState.previousState) {
+                console.warn("No previous state available to undo.");
+                return;
+            }
+            
+            document.getElementById('errorMessage').textContent = "";
+
+            const previousState = gameState.previousState;
+            const currentTab = gameState.activeTab;
+
+            gameState = { 
+                ...previousState, 
+                previousState: null,
+                activeTab: currentTab
+            }; 
+            
+            updateMainDisplay(); 
+            await saveGameState(); 
+        }
+        
+        /** Resets the game state and saves the new session. */
+        async function resetSession() {
+            gameState = {
+                totalScore: 0,
+                currentOut: MIN_OUT,
+                outsCompleted: 0,
+                totalDartsThrown: 0,
+                outsData: {},
+                lastUpdated: new Date().toISOString(),
+                previousState: null,
+                activeTab: 'game' // Always reset to the game tab
+            };
+            
+            updateMainDisplay(); 
+            await saveGameState();
+            renderUI();
+        }
+
+        // --- Download Functionality ---
+        
+        /** Downloads the current HTML file for offline use */
+        function downloadHTML() {
+            // Get the current HTML content
+            const htmlContent = document.documentElement.outerHTML;
+            
+            // Create a blob with the HTML content
+            const blob = new Blob(['<!DOCTYPE html>\n' + htmlContent], { type: 'text/html' });
+            
+            // Create a download link
+            const downloadLink = document.createElement('a');
+            downloadLink.href = URL.createObjectURL(blob);
+            downloadLink.download = 'index.html';
+            
+            // Trigger the download
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            
+            // Clean up the object URL
+            URL.revokeObjectURL(downloadLink.href);
+        }
+
+        // --- Event Listeners ---
+        window.onload = function() {
+            // Download button removed
+
+            // 2. Completion Modal Reset Button Listener (Direct Reset)
+            document.getElementById('completionModalResetButton').addEventListener('click', resetSession);
+
+            // 3. In-Game Reset Button Listener (Opens Confirmation Modal)
+            document.getElementById('resetGameButton').addEventListener('click', showConfirmResetModal);
+
+            // 4. New Confirmation Modal Button Listeners
+            document.getElementById('confirmResetConfirmButton').addEventListener('click', async () => {
+                hideConfirmResetModal();
+                await resetSession();
+            });
+            document.getElementById('confirmResetCancelButton').addEventListener('click', hideConfirmResetModal);
+
+            // 5. Undo Button Listener
+            document.getElementById('undoButton').addEventListener('click', undoLastScore);
+
+            // 6. Combined 456 Button Logic (no dropdown)
+            // Button now just submits 4 darts
+            // Keyboard input for 5/6 still works
+
+            // 7. Hotkey (Keyboard Listener)
+            window.addEventListener('keydown', (e) => {
+                const key = e.key;
+                const isGameActive = gameState.activeTab === 'game' &&
+                                     !document.getElementById('completionModal').classList.contains('flex') &&
+                                     !document.getElementById('confirmResetModal').classList.contains('flex'); // Prevent input if modal is open
+
+                if (isGameActive) {
+                    const allowedScoreKeys = ['0', '2', '3', '4', '5', '6']; 
+
+                    if (allowedScoreKeys.includes(key)) {
+                        e.preventDefault(); 
+                        recordFinish(parseInt(key));
+                        dropdown.classList.add('hidden'); // Close dropdown on keyboard input
+                    } else if (key === 'Backspace') {
+                        const undoButton = document.getElementById('undoButton');
+                        if (!undoButton.disabled) {
+                            e.preventDefault(); 
+                            undoLastScore();
+                        }
+                    }
+                }
+            });
+
+            // 8. On-screen Button Listeners
+            document.querySelectorAll('[data-darts]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const darts = parseInt(button.getAttribute('data-darts'));
+                    recordFinish(darts);
+                    dropdown.classList.add('hidden'); // Close dropdown after selection
+                });
+            });
+        };
+    </script>
+</body>
+
 </html>
